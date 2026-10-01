@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Agenda JD - Planificación Segura</title>
+    
+    <!-- Configuración PWA para acceso directo en móvil -->
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Agenda JD">
+    
+    <style>
+        :root {
+            --primary: #d97706;
+            --primary-dark: #b45309;
+            --bg-color: rgba(15, 23, 42, 0.85);
+            --card-bg: rgba(30, 41, 59, 0.92);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #475569;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: url('051c90c1-5ba3-4865-9540-3d17b46446ee-1_all_315.png') no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* Contenedor móvil */
+        .mobile-container {
+            width: 100%;
+            max-width: 430px;
+            height: 100vh;
+            max-height: 932px;
+            background-color: var(--bg-color);
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+        }
+
+        @media (min-width: 431px) {
+            .mobile-container {
+                height: 88vh;
+                border-radius: 40px;
+                border: 2px solid #d97706;
+            }
+        }
+
+        /* Cabecera optimizada con reloj UTC lateral */
+        header {
+            background-color: var(--card-bg);
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            gap: 10px;
+        }
+
+        .header-info-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .header-title {
+            min-width: 0;
+        }
+
+        .header-title h1 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fbbf24;
+            text-transform: capitalize;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .header-title p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Reloj UTC lateral */
+        .utc-clock-badge {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 4px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 76px;
+            flex-shrink: 0;
+        }
+
+        .utc-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+
+        .utc-time {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fbbf24;
+            font-variant-numeric: tabular-nums;
+            margin-top: 2px;
+            line-height: 1.1;
+        }
+
+        .btn-today {
+            background: rgba(217, 119, 6, 0.2);
+            color: #fbbf24;
+            border: 1px solid #d97706;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* Cuerpo principal scrollable */
+        .app-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Tarjeta del Calendario */
+        .calendar-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+        }
+
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .calendar-nav h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fbbf24;
+            text-transform: capitalize;
+        }
+
+        .nav-btn {
+            background: none;
+            border: 1px solid var(--border);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            user-select: none;
+            transition: background 0.2s;
+            color: var(--text-main);
+        }
+
+        .day-cell:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .day-cell.other-month {
+            color: #64748b;
+        }
+
+        .day-cell.selected {
+            background-color: var(--primary) !important;
+            color: white;
+            font-weight: 600;
+        }
+
+        .day-cell.today:not(.selected) {
+            border: 2px solid #fbbf24;
+            color: #fbbf24;
+            font-weight: 600;
+        }
+
+        .event-indicator {
+            width: 5px;
+            height: 5px;
+            background-color: #fbbf24;
+            border-radius: 50%;
+            position: absolute;
+            bottom: 4px;
+        }
+
+        .day-cell.selected .event-indicator {
+            background-color: white;
+        }
+
+        /* Banner de Notificación Diaria */
+        .notification-banner {
+            background: linear-gradient(135deg, #b45309, #d97706);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(180, 83, 9, 0.4);
+            animation: pulse-notification 2s infinite;
+        }
+
+        @keyframes pulse-notification {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Sección de Agenda Diaria */
+        .agenda-section {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            border: 1px solid var(--border);
+        }
+
+        .agenda-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .agenda-header h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-main);
+            text-transform: capitalize;
+        }
+
+        .btn-add {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .events-list {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 180px;
+        }
+
+        .no-events {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 20px 0;
+        }
+
+        .event-card {
+            background: rgba(15, 23, 42, 0.6);
+            border-left: 4px solid var(--primary);
+            padding: 10px 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+            border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            border-left-width: 4px;
+        }
+
+        .event-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .event-info p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .event-time {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #fbbf24;
+            background: rgba(217, 119, 6, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .action-btn.delete:hover {
+            color: var(--danger);
+        }
+
+        /* Modal para agregar tarea */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 100;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border: 1px solid var(--border);
+            width: 100%;
+            max-width: 430px;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.5);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fbbf24;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            background: #0f172a;
+            color: white;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-top: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mobile-container">
+        <!-- Cabecera con Reloj Digital UTC integrado a un lado -->
+        <header>
+            <div class="header-info-group">
+                <div class="header-title">
+                    <h1 id="current-month-year">Cargando...</h1>
+                    <p id="current-date-full">Planificación Segura</p>
+                </div>
+            </div>
+            
+            <div class="utc-clock-badge" title="Hora Universal Coordinada (UTC)">
+                <span class="utc-label">UTC</span>
+                <span id="utc-clock" class="utc-time">00:00:00</span>
+            </div>
+
+            <button class="btn-today" id="btn-today">Hoy</button>
+        </header>
+
+        <!-- Cuerpo -->
+        <div class="app-body">
+            <!-- Banner de Notificación del Día Actual -->
+            <div id="notification-banner" class="notification-banner" style="display: none;">
+                <span style="font-size: 1.2rem;">⚠</span>
+                <div id="notification-text">Tienes eventos programados para hoy.</div>
+            </div>
+
+            <!-- Widget de Calendario -->
+            <div class="calendar-card">
+                <div class="calendar-nav">
+                    <button class="nav-btn" id="prev-month">&lt;</button>
+                    <h2 id="calendar-month-title">Mes Año</h2>
+                    <button class="nav-btn" id="next-month">&gt;</button>
+                </div>
+                <div class="weekdays">
+                    <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+                </div>
+                <div class="days-grid" id="days-container"></div>
+            </div>
+
+            <!-- Widget de Agenda Diaria -->
+            <div class="agenda-section">
+                <div class="agenda-header">
+                    <h3 id="agenda-date-title">Eventos del Día</h3>
+                    <button class="btn-add" id="open-modal-btn">
+                        <span>+</span> Nuevo
+                    </button>
+                </div>
+                <div class="events-list" id="events-list-container">
+                    <!-- Los eventos se cargan dinámicamente -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Nuevo Evento -->
+        <div class="modal" id="event-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Agregar Tarea / Evento</h3>
+                    <button class="close-modal" id="close-modal-btn">&times;</button>
+                </div>
+                <form id="event-form">
+                    <div class="form-group">
+                        <label for="event-title">Título</label>
+                        <input type="text" id="event-title" class="form-control" placeholder="Ej. Briefing de Vuelo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-time">Hora</label>
+                        <input type="time" id="event-time" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="event-desc">Descripción (Opcional)</label>
+                        <input type="text" id="event-desc" class="form-control" placeholder="Ej. Revisión de pesos y balance">
+                    </div>
+                    <button type="submit" class="btn-submit">Guardar Evento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Registrar Service Worker para PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error:', err));
+            });
+        }
+
+        // Estado de la aplicación
+        let currentDate = new Date();
+        let selectedDate = new Date();
+        let events = JSON.parse(localStorage.getItem('mobile_calendar_events_jd')) || {};
+
+        // Elementos del DOM
+        const monthYearEl = document.getElementById('current-month-year');
+        const currentDateFullEl = document.getElementById('current-date-full');
+        const calendarMonthTitle = document.getElementById('calendar-month-title');
+        const daysContainer = document.getElementById('days-container');
+        const prevMonthBtn = document.getElementById('prev-month');
+        const nextMonthBtn = document.getElementById('next-month');
+        const todayBtn = document.getElementById('btn-today');
+        const utcClockEl = document.getElementById('utc-clock');
+        
+        const agendaDateTitle = document.getElementById('agenda-date-title');
+        const eventsListContainer = document.getElementById('events-list-container');
+        const notificationBanner = document.getElementById('notification-banner');
+        const notificationText = document.getElementById('notification-text');
+        
+        const eventModal = document.getElementById('event-modal');
+        const openModalBtn = document.getElementById('open-modal-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const eventForm = document.getElementById('event-form');
+        const eventTitleInput = document.getElementById('event-title');
+        const eventTimeInput = document.getElementById('event-time');
+        const eventDescInput = document.getElementById('event-desc');
+
+        const monthsNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+        const daysNamesShort = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+
+        function initApp() {
+            updateHeaderDate();
+            startUTCClock();
+            renderCalendar();
+            renderAgenda();
+            checkTodayNotification();
+
+            prevMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                renderCalendar();
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                renderCalendar();
+            });
+
+            todayBtn.addEventListener('click', () => {
+                currentDate = new Date();
+                selectedDate = new Date();
+                renderCalendar();
+                renderAgenda();
+            });
+
+            openModalBtn.addEventListener('click', () => {
+                eventModal.classList.add('active');
+                const now = new Date();
+                eventTimeInput.value = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}`;
+            });
+
+            closeModalBtn.addEventListener('click', () => {
+                eventModal.classList.remove('active');
+            });
+
+            eventModal.addEventListener('click', (e) => {
+                if (e.target === eventModal) eventModal.classList.remove('active');
+            });
+
+            eventForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const title = eventTitleInput.value.trim();
+                const time = eventTimeInput.value;
+                const desc = eventDescInput.value.trim();
+
+                if (!title || !time) return;
+
+                const dateKey = formatDateKey(selectedDate);
+                if (!events[dateKey]) {
+                    events[dateKey] = [];
+                }
+
+                events[dateKey].push({ id: Date.now(), title, time, desc });
+                events[dateKey].sort((a, b) => a.time.localeCompare(b.time));
+
+                localStorage.setItem('mobile_calendar_events_jd', JSON.stringify(events));
+
+                eventForm.reset();
+                eventModal.classList.remove('active');
+                renderCalendar();
+                renderAgenda();
+                checkTodayNotification();
+            });
+        }
+
+        function updateHeaderDate() {
+            const now = new Date();
+            monthYearEl.textContent = `${monthsNames[now.getMonth()]} ${now.getFullYear()}`;
+        }
+
+        // Reloj digital UTC en tiempo real
+        function startUTCClock() {
+            function updateUTC() {
+                const now = new Date();
+                const hours = String(now.getUTCHours()).padStart(2, '0');
+                const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+                const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+                utcClockEl.textContent = `${hours}:${minutes}:${seconds}`;
+            }
+            updateUTC();
+            setInterval(updateUTC, 1000);
+        }
+
+        function checkTodayNotification() {
+            const todayKey = formatDateKey(new Date());
+            const todayEvents = events[todayKey] || [];
+            if (todayEvents.length > 0) {
+                notificationBanner.style.display = 'flex';
+                notificationText.textContent = `¡Atención! Tienes ${todayEvents.length} evento(s) programado(s) para hoy.`;
+            } else {
+                notificationBanner.style.display = 'none';
+            }
+        }
+
+        function renderCalendar() {
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            calendarMonthTitle.textContent = `${monthsNames[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const adjustedFirstDay = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const prevTotalDays = new Date(year, month, 0).getDate();
+
+            daysContainer.innerHTML = '';
+
+            for (let i = adjustedFirstDay; i > 0; i--) {
+                const dayNum = prevTotalDays - i + 1;
+                const cell = createDayCell(dayNum, true, new Date(year, month - 1, dayNum));
+                daysContainer.appendChild(cell);
+            }
+
+            for (let i = 1; i <= totalDays; i++) {
+                const cellDate = new Date(year, month, i);
+                const cell = createDayCell(i, false, cellDate);
+                daysContainer.appendChild(cell);
+            }
+
+            const totalCellsSoFar = adjustedFirstDay + totalDays;
+            const nextDaysCount = (totalCellsSoFar <= 35) ? (35 - totalCellsSoFar) : (42 - totalCellsSoFar);
+            for (let i = 1; i <= nextDaysCount; i++) {
+                const cell = createDayCell(i, true, new Date(year, month + 1, i));
+                daysContainer.appendChild(cell);
+            }
+        }
+
+        function createDayCell(dayNum, isOtherMonth, dateObj) {
+            const cell = document.createElement('div');
+            cell.classList.add('day-cell');
+            if (isOtherMonth) cell.classList.add('other-month');
+            
+            cell.textContent = dayNum;
+
+            const dateKey = formatDateKey(dateObj);
+            const todayKey = formatDateKey(new Date());
+            const selectedKey = formatDateKey(selectedDate);
+
+            if (dateKey === todayKey) {
+                cell.classList.add('today');
+            }
+
+            if (dateKey === selectedKey) {
+                cell.classList.add('selected');
+            }
+
+            if (events[dateKey] && events[dateKey].length > 0) {
+                const indicator = document.createElement('div');
+                indicator.classList.add('event-indicator');
+                cell.appendChild(indicator);
+            }
+
+            cell.addEventListener('click', () => {
+                selectedDate = dateObj;
+                if (isOtherMonth) {
+                    currentDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+                    renderCalendar();
+                } else {
+                    document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('selected'));
+                    cell.classList.add('selected');
+                }
+                renderAgenda();
+            });
+
+            return cell;
+        }
+
+        function renderAgenda() {
+            const dateKey = formatDateKey(selectedDate);
+            const dayName = daysNamesShort[selectedDate.getDay()];
+            agendaDateTitle.textContent = `${dayName}, ${selectedDate.getDate()} de ${monthsNames[selectedDate.getMonth()]}`;
+
+            eventsListContainer.innerHTML = '';
+            const dayEvents = events[dateKey] || [];
+
+            if (dayEvents.length === 0) {
+                eventsListContainer.innerHTML = `<div class="no-events">No hay tareas o eventos para este día.</div>`;
+                return;
+            }
+
+            dayEvents.forEach(ev => {
+                const card = document.createElement('div');
+                card.classList.add('event-card');
+                card.innerHTML = `
+                    <div class="event-info">
+                        <h4>${escapeHTML(ev.title)}</h4>
+                        ${ev.desc ? `<p>${escapeHTML(ev.desc)}</p>` : ''}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="event-time">${ev.time}</span>
+                        <button class="action-btn delete" onclick="deleteEvent('${dateKey}', ${ev.id})" title="Eliminar">&times;</button>
+                    </div>
+                `;
+                eventsListContainer.appendChild(card);
+            });
+        }
+
+        function deleteEvent(dateKey, id) {
+            events[dateKey] = events[dateKey].filter(ev => ev.id !== id);
+            if (events[dateKey].length === 0) {
+                delete events[dateKey];
+            }
+            localStorage.setItem('mobile_calendar_events_jd', JSON.stringify(events));
+            renderCalendar();
+            renderAgenda();
+            checkTodayNotification();
+        }
+
+        function formatDateKey(date) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
